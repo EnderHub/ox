@@ -32,26 +32,28 @@ public final class OS {
   }
 
   public static File getAppFolder(String appName) {
-    String ret;
-    if (type == OS_Type.WINDOWS) {
-      ret = System.getenv("LOCALAPPDATA");
-      if (ret == null) {
-        ret = System.getProperty("user.home") + File.separatorChar + "Local Settings"
-            + File.separatorChar + "Application Data";
-      }
-    } else {
-      checkState(!appName.startsWith("."), "The app name should not start with a period!");
-      appName = "." + appName;
-      ret = System.getProperty("user.home");
-    }
-    if (!ret.endsWith(File.separator)) {
-      ret = ret + File.separatorChar;
-    }
-    ret = ret + appName + File.separatorChar;
-
+    String ret = "./." + appName + File.separatorChar; // Check current directory first
     File file = new File(ret);
-    if (!file.exists()) {
-      file.mkdirs();
+    if (!file.exists()) { // If not found, check home directory
+      if (type == OS_Type.WINDOWS) {
+        ret = System.getenv("LOCALAPPDATA");
+        if (ret == null) {
+          ret = System.getProperty("user.home") + File.separatorChar + "Local Settings"
+              + File.separatorChar + "Application Data";
+        }
+      } else {
+        checkState(!appName.startsWith("."), "The app name should not start with a period!");
+        appName = "." + appName;
+        ret = System.getProperty("user.home");
+      }
+      if (!ret.endsWith(File.separator)) {
+        ret = ret + File.separatorChar;
+      }
+      ret = ret + appName + File.separatorChar;
+      file = new File(ret);
+      if (!file.exists()) {
+        file.mkdirs();
+      }
     }
     return file;
   }
