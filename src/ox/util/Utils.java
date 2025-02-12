@@ -520,17 +520,19 @@ public class Utils {
     return attempt(function, maxTries, delayBetweenTriesMillis, UnaryOperator.identity(), t -> true);
   }
 
-  public static <T> T attempWithBackoff(Supplier<T> function, int maxTries, int initialDelayMillis,
-      Predicate<Throwable> isRetryable) {
-    return attempt(function, maxTries, initialDelayMillis,
-        delay -> Math.round(delay.doubleValue() * (0.75 + Math.random() * 0.75)), // Jittering between 75% - 150%
-        isRetryable);
-  }
-
+  /**
+   * Attempts to execute the given function, retrying up to `maxTries` times.
+   * 
+   * @param function           The function to execute.
+   * @param maxTries           The maximum number of attempts to make.
+   * @param initialDelayMillis The delay in milliseconds before the first retry.
+   * @param backoffStrategy    A function that takes the last delay and returns the next delay.
+   * @param isRetryable        A predicate that determines if the exception is retryable.
+   */
   public static <T> T attempt(Supplier<T> function, int maxTries, int initialDelayMillis,
       UnaryOperator<Long> backoffStrategy, Predicate<Throwable> isRetryable) {
     checkState(maxTries > 0, "maxTries must be greater than 0");
-    checkState(initialDelayMillis > 0, "initialDelayMillis must be greater than or equal to 0");
+    checkState(initialDelayMillis > 0, "initialDelayMillis must be greater than 0");
 
     Throwable lastException = null;
     long currentDelay = initialDelayMillis;
