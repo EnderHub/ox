@@ -516,6 +516,16 @@ public class Utils {
     return XList.create(Throwables.getCausalChain(t)).filter(causeType).first();
   }
 
+  /**
+   * Attempts to execute the given function, retrying up to `maxTries` times with a fixed delay of
+   * `delayBetweenTriesMillis` milliseconds between each attempt.
+   * 
+   * @see Utils#attempt(Supplier, int, int, UnaryOperator, Predicate) for full details.
+   * 
+   * @param function                The function to execute.
+   * @param maxTries                The maximum number of attempts to make.
+   * @param delayBetweenTriesMillis The delay in milliseconds between attempts.
+   */
   public static <T> T attempt(Supplier<T> function, int maxTries, int delayBetweenTriesMillis) {
     return attempt(function, maxTries, delayBetweenTriesMillis, UnaryOperator.identity(), t -> true);
   }
