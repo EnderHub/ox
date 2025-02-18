@@ -1562,6 +1562,7 @@ public class HttpRequest {
         body = normalize(getBody());
         Log.debug(body);
       } catch (Exception e) {
+        Log.debug("Failed to retrieve response body for error handling.", e);
       }
       throw new InvalidHttpStatusException(body, status());
     }
