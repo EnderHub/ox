@@ -28,11 +28,13 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Enums;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
@@ -514,26 +516,58 @@ public class Utils {
     return XList.create(Throwables.getCausalChain(t)).filter(causeType).first();
   }
 
+  /**
+   * Attempts to execute the given function, retrying up to `maxTries` times with a fixed delay of
+   * `delayBetweenTriesMillis` milliseconds between each attempt.
+   * 
+   * @see Utils#attempt(Supplier, int, int, UnaryOperator, Predicate) for full details.
+   * 
+   * @param function                The function to execute.
+   * @param maxTries                The maximum number of attempts to make.
+   * @param delayBetweenTriesMillis The delay in milliseconds between attempts.
+   */
   public static <T> T attempt(Supplier<T> function, int maxTries, int delayBetweenTriesMillis) {
-    checkState(maxTries > 0);
+    return attempt(function, maxTries, delayBetweenTriesMillis, UnaryOperator.identity(), t -> true);
+  }
 
-    Throwable toThrow = null;
+  /**
+   * Attempts to execute the given function, retrying up to `maxTries` times.
+   * 
+   * @param function           The function to execute.
+   * @param maxTries           The maximum number of attempts to make.
+   * @param initialDelayMillis The delay in milliseconds before the first retry.
+   * @param backoffStrategy    A function that takes the last delay and returns the next delay.
+   * @param isRetryable        A predicate that determines if the exception is retryable.
+   */
+  public static <T> T attempt(Supplier<T> function, int maxTries, int initialDelayMillis,
+      UnaryOperator<Long> backoffStrategy, Predicate<Throwable> isRetryable) {
+    checkState(maxTries > 0, "maxTries has to be greater than 0.");
+    checkState(initialDelayMillis > 0, "initialDelayMillis must be greater than 0.");
+
+    Throwable lastException = null;
+    long currentDelay = initialDelayMillis;
+
     for (int i = 0; i < maxTries; i++) {
       try {
-        return function.get();
+        return function.get(); // Attempt the function
       } catch (Throwable t) {
-        Log.error("Utils.attempt: Exception thrown, trying again...");
-        toThrow = t;
+        if (!isRetryable.test(t)) {
+          throw propagate(t); // Non-retryable, propagate immediately
+        }
+        lastException = t;
+        Log.error("Utils.attempt: Exception thrown, trying again...", t);
+
         if (i < maxTries - 1) {
-          sleep(delayBetweenTriesMillis);
+          sleep(currentDelay); // Wait before retrying
+          currentDelay = backoffStrategy.apply(currentDelay); // Compute next delay
         }
       }
     }
-    throw propagate(toThrow);
+    throw propagate(lastException); // All attempts failed
   }
 
   public static XList<String> split(String s, String separator) {
     return XList.create(Splitter.on(separator).trimResults().omitEmptyStrings().split(s));
   }
-
+  
 }
