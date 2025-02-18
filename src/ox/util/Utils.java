@@ -541,7 +541,7 @@ public class Utils {
    */
   public static <T> T attempt(Supplier<T> function, int maxTries, int initialDelayMillis,
       UnaryOperator<Long> backoffStrategy, Predicate<Throwable> isRetryable) {
-    checkState(maxTries >= 0, "maxTries has to be non-negative.");
+    checkState(maxTries > 0, "maxTries has to be greater than 0.");
     checkState(initialDelayMillis > 0, "initialDelayMillis must be greater than 0.");
 
     Throwable lastException = null;
