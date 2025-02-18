@@ -1546,7 +1546,7 @@ public class HttpRequest {
     private final int statusCode;
 
     public InvalidHttpStatusException(String body, int statusCode) {
-      super(body.isEmpty() ? "Error status: " + status() : body);
+      super(body.isEmpty() ? "Error status: " + statusCode : body);
       this.statusCode = statusCode;
     }
 
